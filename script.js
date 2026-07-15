@@ -372,3 +372,55 @@ async function analyzeResume(){
     await getAIAnalysis(resumeText,ats);
 
 }
+
+async function downloadReport() {
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(20);
+    doc.text("AI Resume Analysis Report", 20, 20);
+
+    doc.setFontSize(14);
+    doc.text("ATS Score: " + document.getElementById("atsScore").innerText, 20, 40);
+
+    doc.text("Skills Found:", 20, 55);
+
+    let y = 65;
+
+    document.querySelectorAll("#skillsList li").forEach(skill => {
+        doc.text("- " + skill.innerText, 25, y);
+        y += 8;
+    });
+
+    y += 8;
+
+    doc.text("Missing Skills:", 20, y);
+    y += 10;
+
+    document.querySelectorAll("#missingList li").forEach(skill => {
+        doc.text("- " + skill.innerText, 25, y);
+        y += 8;
+    });
+
+    y += 10;
+
+    doc.text("Suggestions:", 20, y);
+    y += 10;
+
+    document.querySelectorAll("#suggestionList li").forEach(item => {
+        doc.text("- " + item.innerText, 25, y);
+        y += 8;
+    });
+
+    y += 10;
+
+    const analysis = document.getElementById("result").innerText;
+
+    const lines = doc.splitTextToSize(analysis, 170);
+
+    doc.text(lines, 20, y);
+
+    doc.save("Resume_Analysis_Report.pdf");
+}
