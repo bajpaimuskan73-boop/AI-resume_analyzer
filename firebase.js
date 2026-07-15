@@ -1,3 +1,10 @@
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import {
   getAuth,
@@ -25,6 +32,7 @@ import {
   appId: "1:1058125482474:web:357016c5c532acd1ec8a93"
 };
 
+  const storage = getStorage(app);    
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -42,6 +50,27 @@ window.signup = async () => {
   } catch (e) {
     alert(e.message);
   }
+};
+
+window.uploadResume = async (file) => {
+
+    const user = auth.currentUser;
+
+    if (!user) {
+        alert("Please login first");
+        return null;
+    }
+
+    const storageRef = ref(
+        storage,
+        `resumes/${user.uid}/${file.name}`
+    );
+
+    await uploadBytes(storageRef, file);
+
+    const url = await getDownloadURL(storageRef);
+
+    return url;
 };
 
 window.login = async () => {
@@ -70,9 +99,11 @@ window.saveAnalysis = async (resumeText, aiResult) => {
 
   if (!user) {
     alert("Please login first");
+    resumeURL: resumeURL,
     return;
   }
-
+  
+await saveAnalysis(resumeText, aiResult, resumeURL);
   await addDoc(collection(db, "resume_analysis"), {
     uid: user.uid,
     email: user.email,
