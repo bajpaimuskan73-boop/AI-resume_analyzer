@@ -1,42 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Resume Analyzer</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="script.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  
 <body>
 
 <div class="container">
+
     <h1>AI Resume Analyzer</h1>
-</div>
 
-  <script type="module" src="firebase.js"></script>
-  
+    <!-- Login -->
+    <div class="login-box">
 
-    <input type="file" id="resume" accept=".pdf,.doc,.docx">
+        <input
+            type="email"
+            id="email"
+            placeholder="Email">
 
-    <button onclick="analyzeResume()">Analyze Resume</button>
-  <button onclick="downloadReport()">Download Report</button>
+        <input
+            type="password"
+            id="password"
+            placeholder="Password">
+
+        <button onclick="signup()">Sign Up</button>
+
+        <button onclick="login()">Login</button>
+
+        <button onclick="logout()">Logout</button>
+
+    </div>
+
+    <hr>
+
+    <!-- Resume Upload -->
+    <h2>Upload Resume</h2>
+
+    <input
+        type="file"
+        id="resume"
+        accept=".pdf">
+
+    <button onclick="analyzeResume()">
+        Analyze Resume
+    </button>
+
+    <button onclick="downloadReport()">
+        Download Report
+    </button>
+
+    <hr>
+
+    <!-- Job Description -->
+    <h2>Paste Job Description</h2>
+
+    <textarea
+        id="jobDescription"
+        rows="8"
+        placeholder="Paste Job Description Here">
+    </textarea>
+
+    <button onclick="compareResume()">
+        Compare Resume
+    </button>
+
+    <div id="matchResult"></div>
+
+    <hr>
+
+    <!-- Dashboard -->
+
+    <div class="dashboard">
+
+        <div class="card">
+            <h3>ATS Score</h3>
+            <h1 id="atsScore">0</h1>
+        </div>
+
+        <div class="card">
+            <h3>Skills Found</h3>
+            <ul id="skillsList"></ul>
+        </div>
+
+        <div class="card">
+            <h3>Missing Skills</h3>
+            <ul id="missingList"></ul>
+        </div>
+
+        <div class="card">
+            <h3>Suggestions</h3>
+            <ul id="suggestionList"></ul>
+        </div>
+
+    </div>
+
+    <hr>
+
+    <!-- AI Result -->
+
+    <h2>AI Analysis</h2>
 
     <div id="result"></div>
 
+    <hr>
+
+    <!-- History -->
+
+    <h2>Analysis History</h2>
+
+    <button onclick="loadHistory()">
+        Load History
+    </button>
+
+    <div id="history"></div>
+
+</div>
 
 <script src="script.js"></script>
 
+<script type="module" src="firebase.js"></script>
+
 </body>
 </html>
-
-<div class="login-box">
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-
-    <button onclick="signup()">Sign Up</button>
-    <button onclick="login()">Login</button>
-    <button onclick="logout()">Logout</button>
-</div>
