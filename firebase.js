@@ -1,3 +1,14 @@
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+const db = getFirestore(app);
+
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 
 import {
@@ -6,6 +17,7 @@ createUserWithEmailAndPassword,
 signInWithEmailAndPassword,
 signOut
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
 
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
