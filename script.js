@@ -75,6 +75,62 @@ async function getAIAnalysis(resumeText) {
 
 await getAIAnalysis(resumeText);
 
+let aiResult = "";
+
+async function getAIAnalysis(resumeText) {
+
+    const API_KEY = "YOUR_GEMINI_API_KEY";
+
+    const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: `Analyze this resume:
+                        Give ATS Score,
+                        Skills,
+                        Missing Skills,
+                        Suggestions.
+                        Resume:
+                        ${resumeText}`
+                    }]
+                }]
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    aiResult = data.candidates[0].content.parts[0].text;
+
+    document.getElementById("result").innerText = aiResult;
+}
+
+function downloadReport() {
+
+    if (!aiResult) {
+        alert("Analyze the resume first.");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text("AI Resume Analysis Report", 20, 20);
+
+    const lines = doc.splitTextToSize(aiResult, 170);
+    doc.text(lines, 20, 35);
+
+    doc.save("Resume_Report.pdf");
+}
+
 
 
 
