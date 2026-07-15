@@ -34,3 +34,47 @@ async function analyzeResume() {
 
     reader.readAsArrayBuffer(file);
 }
+
+async function getAIAnalysis(resumeText) {
+
+    const API_KEY = "YOUR_GEMINI_API_KEY";
+
+    const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: `Analyze this resume and give:
+                                1. ATS Score out of 100
+                                2. Skills Found
+                                3. Missing Skills
+                                4. Suggestions
+                                Resume:
+                                ${resumeText}`
+                            }
+                        ]
+                    }
+                ]
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    document.getElementById("result").innerHTML =
+        data.candidates[0].content.parts[0].text;
+}
+
+
+await getAIAnalysis(resumeText);
+
+
+
+
