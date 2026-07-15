@@ -31,8 +31,6 @@ const db = getFirestore(app);
 
 const app = initializeApp(firebaseConfig);
 
-const auth = getAuth(app);
-const db = getFirestore(app);
 
 window.signup = async () => {
   const email = document.getElementById("email").value;
