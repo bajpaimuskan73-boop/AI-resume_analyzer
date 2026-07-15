@@ -16,14 +16,18 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
- firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+ const firebaseConfig = {
+  apiKey: "AIzaSyDRukXBa4Ed4v2Q7KcsWvB8sc--y6B0pzI",
+  authDomain: "ai-resume-analyzer-b94ed.firebaseapp.com",
+  projectId: "ai-resume-analyzer-b94ed",
+  storageBucket: "ai-resume-analyzer-b94ed.firebasestorage.app",
+  messagingSenderId: "1058125482474",
+  appId: "1:1058125482474:web:357016c5c532acd1ec8a93"
 };
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 const app = initializeApp(firebaseConfig);
 
