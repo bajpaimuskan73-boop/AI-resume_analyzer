@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Resume Analyzer</title>
+    <title>AI Resume Analyzer - Professional Resume Optimization</title>
+    <meta name="description" content="Analyze your resume with AI. Get ATS scores, skill recommendations, and job description matching.">
 
     <link rel="stylesheet" href="style.css">
 
@@ -17,60 +18,92 @@
 
 <div class="container">
 
-    <h1>AI Resume Analyzer</h1>
+    <h1>🚀 AI Resume Analyzer</h1>
+    <p class="subtitle">Optimize your resume for ATS and land your dream job</p>
 
-    <!-- Login -->
+    <div id="authStatus">🔒 Not logged in</div>
+
+    <!-- Authentication Section -->
     <div class="login-box">
-
         <input
             type="email"
             id="email"
-            placeholder="Email">
+            placeholder="📧 Email"
+            aria-label="Email">
 
         <input
             type="password"
             id="password"
-            placeholder="Password">
+            placeholder="🔐 Password"
+            aria-label="Password">
 
-        <button onclick="signup()">Sign Up</button>
+        <button onclick="signup()">📝 Sign Up</button>
 
-        <button onclick="login()">Login</button>
+        <button onclick="login()">🔓 Login</button>
 
-        <button onclick="logout()">Logout</button>
+        <button onclick="logout()">🚪 Logout</button>
+
+        <button onclick="sendPasswordReset()" style="background:#fff;border:1px solid #ddd;padding:8px 10px;border-radius:8px;margin-top:6px;">🔁 Forgot Password</button>
+
+        <button onclick="deleteAccountAndData()" style="background:#fff;border:1px solid #ff6b6b;color:#bf1b1b;padding:8px 10px;border-radius:8px;margin-top:6px;">🗑️ Delete Account</button>
+        <button onclick="requestServerSideDeletion()" style="background:#ff6b6b;border:1px solid #bf1b1b;color:#fff;padding:8px 10px;border-radius:8px;margin-top:6px;margin-left:6px;">🗂️ Delete (Server)</button>
 
     </div>
 
     <hr>
 
-    <!-- Resume Upload -->
-    <h2>Upload Resume</h2>
+    <h2>🔑 Gemini AI Configuration</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Get your free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #2575fc; text-decoration: none; font-weight: 600;">Google AI Studio</a></p>
+    
+    <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 15px;">
+        <input
+            type="password"
+            id="geminiApiKey"
+            placeholder="Paste your Gemini API key here..."
+            style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;">
+        <button onclick="saveApiKey()" style="background: linear-gradient(90deg, #4f46e5, #7c3aed); padding: 12px 20px;">
+            💾 Save Key
+        </button>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom: 15px;">
+        <button onclick="openApiModal()" style="background: linear-gradient(90deg,#10b981,#059669); padding:10px 14px; border-radius:8px; color:#fff; border: none;">🔓 Enable AI Features (Free)</button>
+        <p id="apiKeyStatus" style="font-size: 12px; color: #999; margin:0;">🔒 API key not configured</p>
+    </div>
+
+    <hr>
+
+    <!-- Resume Upload Section -->
+    <h2>📄 Upload Resume</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Upload a PDF resume to get started with analysis</p>
 
     <input
         type="file"
         id="resume"
-        accept=".pdf">
+        accept=".pdf"
+        aria-label="Resume PDF file">
 
-    <button onclick="analyzeResume()">
-        Analyze Resume
+    <button onclick="analyzeResume()" style="width: 100%; margin-top: 10px;">
+        🔍 Analyze Resume
     </button>
 
-    <button onclick="downloadReport()">
-        Download Report
+    <button onclick="downloadReport()" style="width: 100%; background: linear-gradient(90deg, #f59e0b, #d97706);">
+        📥 Download Report
     </button>
 
     <hr>
 
-    <!-- Job Description -->
-    <h2>Paste Job Description</h2>
+    <!-- Job Description Section -->
+    <h2>💼 Paste Job Description</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Paste a job description to compare with your resume</p>
 
     <textarea
         id="jobDescription"
         rows="8"
-        placeholder="Paste Job Description Here">
-    </textarea>
+        placeholder="Paste Job Description Here..."
+        aria-label="Job Description"></textarea>
 
-    <button onclick="compareResume()">
-        Compare Resume
+    <button onclick="compareResume()" style="width: 100%; background: linear-gradient(90deg, #10b981, #059669);">
+        ⚡ Compare Resume
     </button>
 
     <div id="matchResult"></div>
@@ -78,26 +111,28 @@
     <hr>
 
     <!-- Dashboard -->
+    <h2>📊 Analysis Dashboard</h2>
 
     <div class="dashboard">
 
         <div class="card">
             <h3>ATS Score</h3>
             <h1 id="atsScore">0</h1>
+            <p style="font-size: 12px; color: #666;">Out of 100%</p>
         </div>
 
         <div class="card">
-            <h3>Skills Found</h3>
+            <h3>✅ Skills Found</h3>
             <ul id="skillsList"></ul>
         </div>
 
         <div class="card">
-            <h3>Missing Skills</h3>
+            <h3>⚠️ Missing Skills</h3>
             <ul id="missingList"></ul>
         </div>
 
         <div class="card">
-            <h3>Suggestions</h3>
+            <h3>💡 Suggestions</h3>
             <ul id="suggestionList"></ul>
         </div>
 
@@ -106,24 +141,59 @@
     <hr>
 
     <!-- AI Result -->
-
-    <h2>AI Analysis</h2>
-
-    <div id="result"></div>
+    <h2>🤖 AI Analysis Result</h2>
+    <div id="aiResult">
+        <p style="color: #999; text-align: center;">Analysis results will appear here after you upload and analyze a resume.</p>
+    </div>
 
     <hr>
 
-    <!-- History -->
+    <!-- History Section -->
+    <h2>📜 Analysis History</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Login to save and view your analysis history</p>
 
-    <h2>Analysis History</h2>
-
-    <button onclick="loadHistory()">
-        Load History
+    <button onclick="loadHistory()" style="width: 100%; background: linear-gradient(90deg, #8b5cf6, #7c3aed);">
+        📂 Load History
     </button>
 
     <div id="history"></div>
 
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <p>✨ AI Resume Analyzer v1.0 | Powered by Firebase & Gemini AI</p>
+        <p>© 2024 All rights reserved. Your data is secure and encrypted.</p>
+    </footer>
+
 </div>
+
+    <!-- API Key Setup Modal -->
+    <div id="apiModal" class="modal" aria-hidden="true" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔑 Enable Gemini AI Features</h2>
+                <button class="modal-close" onclick="closeApiModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Get your FREE Gemini API key in 2 minutes:</strong></p>
+                <ol>
+                    <li>Go to: <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio →</a></li>
+                    <li>Sign in with your Google account</li>
+                    <li>Click "Create API Key" and follow prompts</li>
+                    <li>Copy the API key that appears</li>
+                    <li>Return here and paste it below</li>
+                </ol>
+                <p style="margin-top:10px;">✅ Free tier: 60 requests/min • No card required</p>
+
+                <input id="modalApiKey" placeholder="Paste your API key here..." style="width:100%; padding:10px; margin-top:10px; border-radius:8px; border:1px solid #ddd;">
+            </div>
+            <div class="modal-actions">
+                <button onclick="saveApiKeyFromModal()" style="background: linear-gradient(90deg,#10b981,#059669); padding:10px 14px; color:#fff; border-radius:8px; border:none;">✅ Activate AI</button>
+                <button onclick="closeApiModal()" style="margin-left:8px; padding:10px 14px; border-radius:8px; border:1px solid #ccc; background:#fff;">Skip for Now</button>
+            </div>
+        </div>
+    </div>
 
 <script src="script.js"></script>
 

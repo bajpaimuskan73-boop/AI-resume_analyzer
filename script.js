@@ -4,29 +4,118 @@
 
 let resumeText = "";
 let aiResult = "";
+let isAnalyzing = false;
+
+// API Key Configuration
+let API_KEY = localStorage.getItem("geminiApiKey") || "";
+
+// Validation Functions
+function validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function validatePassword(password) {
+    return password.length >= 6;
+}
+
+function showLoading(elementId, show = true) {
+    const element = document.getElementById(elementId);
+    if (show) {
+        element.innerHTML = '<div class="loading"><p>⏳ Processing... Please wait</p></div>';
+    }
+}
+
+function showError(elementId, message) {
+    const element = document.getElementById(elementId);
+    element.innerHTML = `<div class="error-message"><p>❌ ${message}</p></div>`;
+}
+
+// Save Gemini API Key
+function saveApiKey() {
+    const key = document.getElementById("geminiApiKey").value.trim();
+    if (!key) {
+        alert("❌ Please enter a valid API key");
+        return;
+    }
+    localStorage.setItem("geminiApiKey", key);
+    API_KEY = key;
+    alert("✅ API Key saved successfully!");
+    document.getElementById("apiKeyStatus").textContent = "✅ API Key configured";
+}
+
+// Load API Key on page load
+window.addEventListener("DOMContentLoaded", () => {
+    if (API_KEY) {
+        document.getElementById("apiKeyStatus").textContent = "✅ AI Features Enabled!";
+    } else {
+        document.getElementById("apiKeyStatus").textContent = "✅ Basic Analysis Works Without API Key! Optionally add your free Gemini API key for AI-powered detailed feedback";
+    }
+});
+
+// Modal management
+window.openApiModal = function() {
+    const m = document.getElementById('apiModal');
+    if (!m) return;
+    m.style.display = 'flex';
+    m.setAttribute('aria-hidden', 'false');
+};
+
+window.closeApiModal = function() {
+    const m = document.getElementById('apiModal');
+    if (!m) return;
+    m.style.display = 'none';
+    m.setAttribute('aria-hidden', 'true');
+};
+
+window.saveApiKeyFromModal = function() {
+    const key = document.getElementById('modalApiKey').value.trim();
+    if (!key) {
+        alert('❌ Please paste a valid API key');
+        return;
+    }
+    localStorage.setItem('geminiApiKey', key);
+    API_KEY = key;
+    document.getElementById('apiKeyStatus').textContent = '✅ AI Features Enabled!';
+    closeApiModal();
+    alert('✅ API Key saved and AI enabled');
+};
 
 // ==========================
 // Analyze Resume
 // ==========================
 
 async function analyzeResume() {
-
     const file = document.getElementById("resume").files[0];
 
     if (!file) {
-        alert("Please upload a PDF Resume");
+        alert("❌ Please upload a PDF Resume");
         return;
     }
 
-    resumeText = await extractPDFText(file);
+    if (file.type !== "application/pdf") {
+        alert("❌ Please upload a valid PDF file");
+        return;
+    }
 
-    const ats = calculateATS(resumeText);
+    try {
+        showLoading("aiResult");
+        resumeText = await extractPDFText(file);
+        
+        if (!resumeText || resumeText.trim().length === 0) {
+            showError("aiResult", "Could not extract text from PDF. Please try another file.");
+            return;
+        }
 
-    updateDashboard(ats);
-
-    // Part 2 me ye function add hoga
-    // await getAIAnalysis(resumeText, ats);
-
+        const ats = calculateATS(resumeText);
+        updateDashboard(ats);
+        
+        // Call AI Analysis
+        await getAIAnalysis(resumeText, ats);
+    } catch (error) {
+        showError("aiResult", `Failed to analyze resume: ${error.message}`);
+        console.error(error);
+    }
 }
 
 // ==========================
@@ -179,60 +268,48 @@ function updateDashboard(data) {
 // ==========================
 
 function compareResume() {
-
-    const jd = document
-        .getElementById("jobDescription")
-        .value
-        .toLowerCase();
-
-    if (jd == "") {
-
-        alert("Paste Job Description");
-
+    if (!resumeText || resumeText.trim().length === 0) {
+        alert("❌ Please analyze a resume first");
         return;
-
     }
 
-    const words = [
+    const jd = document.getElementById("jobDescription").value.toLowerCase().trim();
 
-        ...new Set(
+    if (jd === "") {
+        alert("❌ Please paste a job description");
+        return;
+    }
 
-            jd.match(/\b[a-z]+\b/g)
-
-        )
-
-    ];
-
-    let matched = [];
-
-    words.forEach(word => {
-
-        if (resumeText.toLowerCase().includes(word)) {
-
-            matched.push(word);
-
+    try {
+        const words = [...new Set(jd.match(/\b[a-z]+\b/g))].filter(w => w.length > 3);
+        
+        if (words.length === 0) {
+            alert("❌ Job description is too short. Please paste more details.");
+            return;
         }
 
-    });
+        let matched = [];
+        words.forEach(word => {
+            if (resumeText.toLowerCase().includes(word)) {
+                matched.push(word);
+            }
+        });
 
-    const score = Math.round(
+        const score = words.length > 0 ? Math.round((matched.length / words.length) * 100) : 0;
 
-        matched.length /
-        words.length *
-        100
+        const matchColor = score >= 80 ? "#00c853" : score >= 50 ? "#ffa500" : "#d32f2f";
 
-    );
-
-    document.getElementById("matchResult").innerHTML =
-
-        `
-        <h2>Match Score : ${score}%</h2>
-
-        <h3>Matched Skills</h3>
-
-        <p>${matched.join(", ")}</p>
+        document.getElementById("matchResult").innerHTML = `
+            <div class="match-result" style="border-left-color: ${matchColor};">
+                <h2>Match Score: <span style="color: ${matchColor}; font-weight: bold;">${score}%</span></h2>
+                <h3>✅ Matched Skills (${matched.length}/${words.length})</h3>
+                <p>${matched.join(", ") || "No keywords matched"}</p>
+                ${score < 50 ? '<p style="color: #d32f2f; font-weight: 600;">⚠️ Consider adding missing keywords to your resume</p>' : ''}
+            </div>
         `;
-
+    } catch (error) {
+        showError("matchResult", `Error comparing resume: ${error.message}`);
+    }
 }
 
 // ======================================
@@ -240,294 +317,218 @@ function compareResume() {
 // ======================================
 
 async function getAIAnalysis(resumeText, ats) {
-
-    async function getAIAnalysis(resumeText, ats) {
-
-    let feedback = "";
-
-    if (ats.score < 40) {
-
-        feedback = `
-<h2>AI Resume Analysis</h2>
-
-<b>ATS Score:</b> ${ats.score}%<br><br>
-
-<b>Overall Feedback:</b><br>
-Your resume needs significant improvement.
-
-<br><br>
-
-<b>Strengths:</b>
-<ul>
-<li>Resume uploaded successfully</li>
-<li>Basic technical information found</li>
-</ul>
-
-<b>Weaknesses:</b>
-<ul>
-<li>Missing many technical skills</li>
-<li>Projects are not detailed</li>
-<li>Add certifications and achievements</li>
-</ul>
-
-<b>Suggestions:</b>
-<ul>
-<li>Add React, Node.js, MongoDB</li>
-<li>Mention GitHub projects</li>
-<li>Add internship experience</li>
-<li>Improve resume formatting</li>
-</ul>
-
-<b>Final Rating:</b> ⭐⭐☆☆☆
-`;
-
-    } else if (ats.score < 80) {
-
-        feedback = `
-<h2>AI Resume Analysis</h2>
-
-<b>ATS Score:</b> ${ats.score}%<br><br>
-
-<b>Overall Feedback:</b><br>
-Good resume with scope for improvement.
-
-<br><br>
-
-<b>Strengths:</b>
-<ul>
-<li>Good technical skills</li>
-<li>Resume is ATS friendly</li>
-</ul>
-
-<b>Weaknesses:</b>
-<ul>
-<li>Add more projects</li>
-<li>Add measurable achievements</li>
-</ul>
-
-<b>Suggestions:</b>
-<ul>
-<li>Improve project descriptions</li>
-<li>Add certifications</li>
-<li>Add leadership activities</li>
-</ul>
-
-<b>Final Rating:</b> ⭐⭐⭐⭐☆
-`;
-
-    } else {
-
-        feedback = `
-<h2>AI Resume Analysis</h2>
-
-<b>ATS Score:</b> ${ats.score}%<br><br>
-
-<b>Overall Feedback:</b><br>
-Excellent resume. Ready for job applications.
-
-<br><br>
-
-<b>Strengths:</b>
-<ul>
-<li>Excellent technical skills</li>
-<li>Strong ATS compatibility</li>
-<li>Well structured resume</li>
-</ul>
-
-<b>Suggestions:</b>
-<ul>
-<li>Keep updating new projects</li>
-<li>Customize resume for each job</li>
-</ul>
-
-<b>Final Rating:</b> ⭐⭐⭐⭐⭐
-`;
+    if (!API_KEY) {
+        alert("⚠️ Please configure your Gemini API key first!");
+        generateDefaultAnalysis(ats);
+        return;
     }
 
-    aiResult = feedback;
-
-    document.getElementById("result").innerHTML = feedback;
-
-    if (typeof saveAnalysis === "function") {
-        await saveAnalysis(resumeText, feedback);
-    }
-}
-
-Analyze this resume.
-
-Resume:
-${resumeText}
-
-ATS Score:
-${ats.score}
-
-Skills Found:
-${ats.found.join(", ")}
-
-Missing Skills:
-${ats.missing.join(", ")}
-
-Return your response in this format:
-
-# Resume Analysis
-
-ATS Score:
-Overall Feedback:
-Strengths:
-Weaknesses:
-Missing Skills:
-Project Suggestions:
-Interview Tips:
-Final Rating:
-`;
+    isAnalyzing = true;
+    showLoading("aiResult");
 
     try {
+        const prompt = `Analyze this resume and provide detailed feedback:
 
-        document.getElementById("result").innerHTML =
-        "<h2>Analyzing Resume...</h2>";
+Resume Content:
+${resumeText}
+
+ATS Score: ${ats.score}%
+Skills Found: ${ats.found.join(", ")}
+Missing Skills: ${ats.missing.join(", ")}
+
+Please provide a comprehensive analysis including:
+1. Overall Assessment
+2. Strengths
+3. Weaknesses
+4. Top 5 Skills to Add
+5. Resume Format Suggestions
+6. Interview Preparation Tips
+7. Action Items Priority List
+
+Format your response in an easy-to-read way with clear sections.`;
 
         const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
-        {
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [
+                                {
+                                    text: prompt,
+                                },
+                            ],
+                        },
+                    ],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 2000,
+                    },
+                }),
+            }
+        );
 
-            method:"POST",
-
-            headers:{
-                "Content-Type":"application/json"
-            },
-
-            body:JSON.stringify({
-
-                contents:[
-                    {
-
-                        parts:[
-                            {
-
-                                text:prompt
-
-                            }
-                        ]
-
-                    }
-                ]
-
-            })
-
-        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || "API request failed");
+        }
 
         const data = await response.json();
 
-        aiResult =
-        data.candidates[0].content.parts[0].text;
+        if (!data.candidates || data.candidates.length === 0) {
+            throw new Error("No response from Gemini API");
+        }
 
-        document.getElementById("result").innerHTML =
+        aiResult = data.candidates[0].content.parts[0].text;
 
-        `
-        <div class="history-card">
-
-        <h2>AI Resume Analysis</h2>
-
-        <pre>${aiResult}</pre>
-
-        </div>
+        document.getElementById("aiResult").innerHTML = `
+            <div class="ai-analysis">
+                <div class="ai-header">
+                    <h3>🤖 AI-Powered Resume Analysis</h3>
+                    <p class="ai-timestamp">Generated: ${new Date().toLocaleString()}</p>
+                </div>
+                <div class="ai-content">
+                    ${aiResult.replace(/\n/g, "<br>")}
+                </div>
+            </div>
         `;
 
-        // Firebase save (Part 3)
-        // await saveAnalysis(resumeText, aiResult);
-
+        // Save to Firebase if logged in
+        if (typeof saveAnalysis === "function") {
+            try {
+                await saveAnalysis(resumeText, aiResult);
+            } catch (error) {
+                console.warn("Could not save to Firebase:", error);
+            }
+        }
+    } catch (error) {
+        console.error("AI Analysis Error:", error);
+        showError(
+            "aiResult",
+            `Failed to get AI analysis: ${error.message}`
+        );
+        generateDefaultAnalysis(ats);
+    } finally {
+        isAnalyzing = false;
     }
-
-    catch(error){
-
-        console.log(error);
-
-        document.getElementById("result").innerHTML=
-
-        `
-        <h2 style="color:red;">
-        Error while contacting Gemini API
-        </h2>
-        `;
-
-    }
-
 }
 
-// ======================================
-// Analyze Resume Updated
-// ======================================
+function generateDefaultAnalysis(ats) {
+    const scoreColor = ats.score >= 80 ? '#10b981' : ats.score >= 50 ? '#f59e0b' : '#ef4444';
+    let feedback = `
+    <div class="ai-analysis">
+        <div style="padding:16px; border-radius:10px; border-left:4px solid ${scoreColor}; background: #fff;">
+            <h3 style="margin-top:0; color:${scoreColor};">📊 Basic Analysis (Demo Mode)</h3>
+            <p><strong>ATS Score:</strong> <span style="font-weight:700;">${ats.score}%</span></p>
+            <p><strong>Skills Found:</strong> ${ats.found.join(', ') || 'None detected'}</p>
+            <p><strong>Missing Skills:</strong> ${ats.missing.join(', ')}</p>
+            ${ats.score < 60 ? '<div style="margin-top:10px; padding:10px; background:#fff3cd; border:1px solid #ffe8a1; border-radius:6px;">⚠️ Your resume can be improved. Enable AI Features for personalized suggestions!</div>' : ''}
+        </div>
+        <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+            <button onclick="openApiModal()" style="background: linear-gradient(90deg,#10b981,#059669); color:#fff; padding:10px 14px; border-radius:8px; border:none;">🔓 Enable AI Features (Free)</button>
+            <button onclick="downloadReport()" style="padding:10px 14px; border-radius:8px; border:1px solid #ddd; background:#fff;">📥 Download Basic Report</button>
+        </div>
+    </div>
+    `;
 
-async function analyzeResume(){
-
-    const file=document.getElementById("resume").files[0];
-
-    if(!file){
-
-        alert("Please Upload Resume");
-
-        return;
-
-    }
-
-    resumeText=await extractPDFText(file);
-
-    const ats=calculateATS(resumeText);
-
-    updateDashboard(ats);
-
-    await getAIAnalysis(resumeText,ats);
-
+    aiResult = feedback;
+    document.getElementById('aiResult').innerHTML = feedback;
 }
 
 async function downloadReport() {
+    try {
+        if (!document.getElementById("atsScore").innerText || document.getElementById("atsScore").innerText === "0") {
+            alert("❌ Please analyze a resume first before downloading the report");
+            return;
+        }
 
-    const { jsPDF } = window.jspdf;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
 
-    const doc = new jsPDF();
+        // Title
+        doc.setFontSize(20);
+        doc.setTextColor(37, 117, 252);
+        doc.text("AI Resume Analysis Report", 20, 20);
 
-    doc.setFontSize(20);
-    doc.text("AI Resume Analysis Report", 20, 20);
+        // Metadata
+        doc.setFontSize(10);
+        doc.setTextColor(68, 68, 68);
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 28);
 
-    doc.setFontSize(14);
-    doc.text("ATS Score: " + document.getElementById("atsScore").innerText, 20, 40);
+        // ATS Score
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text("ATS Score", 20, 40);
+        doc.setFontSize(24);
+        doc.setTextColor(106, 17, 203);
+        doc.text(document.getElementById("atsScore").innerText + "%", 20, 50);
 
-    doc.text("Skills Found:", 20, 55);
-
-    let y = 65;
-
-    document.querySelectorAll("#skillsList li").forEach(skill => {
-        doc.text("- " + skill.innerText, 25, y);
+        // Skills Found
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        let y = 65;
+        doc.text("Skills Found:", 20, y);
         y += 8;
-    });
 
-    y += 8;
+        document.querySelectorAll("#skillsList li").forEach((skill, index) => {
+            if (y > 280) {
+                doc.addPage();
+                y = 20;
+            }
+            doc.setFontSize(11);
+            doc.text(`• ${skill.innerText}`, 25, y);
+            y += 7;
+        });
 
-    doc.text("Missing Skills:", 20, y);
-    y += 10;
-
-    document.querySelectorAll("#missingList li").forEach(skill => {
-        doc.text("- " + skill.innerText, 25, y);
+        // Missing Skills
+        y += 5;
+        if (y > 270) {
+            doc.addPage();
+            y = 20;
+        }
+        doc.setFontSize(12);
+        doc.text("Missing Skills:", 20, y);
         y += 8;
-    });
 
-    y += 10;
+        document.querySelectorAll("#missingList li").forEach((skill) => {
+            if (y > 280) {
+                doc.addPage();
+                y = 20;
+            }
+            doc.setFontSize(11);
+            doc.text(`• ${skill.innerText}`, 25, y);
+            y += 7;
+        });
 
-    doc.text("Suggestions:", 20, y);
-    y += 10;
-
-    document.querySelectorAll("#suggestionList li").forEach(item => {
-        doc.text("- " + item.innerText, 25, y);
+        // Suggestions
+        y += 5;
+        if (y > 270) {
+            doc.addPage();
+            y = 20;
+        }
+        doc.setFontSize(12);
+        doc.text("Suggestions:", 20, y);
         y += 8;
-    });
 
-    y += 10;
+        document.querySelectorAll("#suggestionList li").forEach((item) => {
+            if (y > 280) {
+                doc.addPage();
+                y = 20;
+            }
+            doc.setFontSize(11);
+            doc.text(`• ${item.innerText}`, 25, y);
+            y += 7;
+        });
 
-    const analysis = document.getElementById("result").innerText;
-
-    const lines = doc.splitTextToSize(analysis, 170);
-
-    doc.text(lines, 20, y);
-
-    doc.save("Resume_Analysis_Report.pdf");
+        // Save PDF
+        doc.save(`Resume_Analysis_${new Date().getTime()}.pdf`);
+        alert("✅ Report downloaded successfully!");
+    } catch (error) {
+        alert(`❌ Error downloading report: ${error.message}`);
+        console.error(error);
+    }
 }
