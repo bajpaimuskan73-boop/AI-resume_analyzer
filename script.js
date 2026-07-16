@@ -241,10 +241,117 @@ function compareResume() {
 
 async function getAIAnalysis(resumeText, ats) {
 
-    const API_KEY = "YOUR_GEMINI_API_KEY";
+    async function getAIAnalysis(resumeText, ats) {
 
-    const prompt = `
-You are an expert ATS Resume Reviewer.
+    let feedback = "";
+
+    if (ats.score < 40) {
+
+        feedback = `
+<h2>AI Resume Analysis</h2>
+
+<b>ATS Score:</b> ${ats.score}%<br><br>
+
+<b>Overall Feedback:</b><br>
+Your resume needs significant improvement.
+
+<br><br>
+
+<b>Strengths:</b>
+<ul>
+<li>Resume uploaded successfully</li>
+<li>Basic technical information found</li>
+</ul>
+
+<b>Weaknesses:</b>
+<ul>
+<li>Missing many technical skills</li>
+<li>Projects are not detailed</li>
+<li>Add certifications and achievements</li>
+</ul>
+
+<b>Suggestions:</b>
+<ul>
+<li>Add React, Node.js, MongoDB</li>
+<li>Mention GitHub projects</li>
+<li>Add internship experience</li>
+<li>Improve resume formatting</li>
+</ul>
+
+<b>Final Rating:</b> ⭐⭐☆☆☆
+`;
+
+    } else if (ats.score < 80) {
+
+        feedback = `
+<h2>AI Resume Analysis</h2>
+
+<b>ATS Score:</b> ${ats.score}%<br><br>
+
+<b>Overall Feedback:</b><br>
+Good resume with scope for improvement.
+
+<br><br>
+
+<b>Strengths:</b>
+<ul>
+<li>Good technical skills</li>
+<li>Resume is ATS friendly</li>
+</ul>
+
+<b>Weaknesses:</b>
+<ul>
+<li>Add more projects</li>
+<li>Add measurable achievements</li>
+</ul>
+
+<b>Suggestions:</b>
+<ul>
+<li>Improve project descriptions</li>
+<li>Add certifications</li>
+<li>Add leadership activities</li>
+</ul>
+
+<b>Final Rating:</b> ⭐⭐⭐⭐☆
+`;
+
+    } else {
+
+        feedback = `
+<h2>AI Resume Analysis</h2>
+
+<b>ATS Score:</b> ${ats.score}%<br><br>
+
+<b>Overall Feedback:</b><br>
+Excellent resume. Ready for job applications.
+
+<br><br>
+
+<b>Strengths:</b>
+<ul>
+<li>Excellent technical skills</li>
+<li>Strong ATS compatibility</li>
+<li>Well structured resume</li>
+</ul>
+
+<b>Suggestions:</b>
+<ul>
+<li>Keep updating new projects</li>
+<li>Customize resume for each job</li>
+</ul>
+
+<b>Final Rating:</b> ⭐⭐⭐⭐⭐
+`;
+    }
+
+    aiResult = feedback;
+
+    document.getElementById("result").innerHTML = feedback;
+
+    if (typeof saveAnalysis === "function") {
+        await saveAnalysis(resumeText, feedback);
+    }
+}
 
 Analyze this resume.
 
