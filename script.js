@@ -326,8 +326,7 @@ async function getAIAnalysis(resumeText, ats) {
     isAnalyzing = true;
     showLoading("aiResult");
 
-    try {
-        const prompt = `Analyze this resume and provide detailed feedback:
+    const prompt = `Analyze this resume and provide detailed feedback:
 
 Resume Content:
 ${resumeText}
@@ -347,43 +346,75 @@ Please provide a comprehensive analysis including:
 
 Format your response in an easy-to-read way with clear sections.`;
 
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+    const requestBody = {
+        contents: [
             {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            parts: [
-                                {
-                                    text: prompt,
-                                },
-                            ],
-                        },
-                    ],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 2000,
+                parts: [
+                    {
+                        text: prompt,
                     },
-                }),
+                ],
+            },
+        ],
+        generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2000,
+        },
+    };
+
+    const endpoints = [
+        `https://generativelanguage.googleapis.com/v1beta2/models/gemini-1.5-flash:generateText?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta2/models/gemini-1.5-mini:generateText?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${API_KEY}`
+    ];
+
+    let data = null;
+    let lastError = null;
+
+    try {
+        for (const url of endpoints) {
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+
+                if (!response.ok) {
+                    let message = `API request failed (${response.status})`;
+                    const contentType = response.headers.get("Content-Type") || "";
+                    if (contentType.includes("application/json")) {
+                        const errorBody = await response.json();
+                        message = errorBody.error?.message || message;
+                    }
+                    throw new Error(message);
+                }
+
+                const responseJson = await response.json();
+                if (!responseJson.candidates || responseJson.candidates.length === 0) {
+                    throw new Error("No response from AI endpoint");
+                }
+
+                data = responseJson;
+                break;
+            } catch (error) {
+                lastError = error;
+                console.warn(`GenAI endpoint failed: ${url}`, error);
             }
-        );
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || "API request failed");
         }
 
-        const data = await response.json();
-
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("No response from Gemini API");
+        if (!data) {
+            throw lastError || new Error("All AI endpoints failed");
         }
 
-        aiResult = data.candidates[0].content.parts[0].text;
+        const aiText = data.candidates?.[0]?.content?.[0]?.text || data.outputText || "";
+        if (!aiText) {
+            throw new Error("AI returned no text response");
+        }
+
+        aiResult = aiText;
 
         document.getElementById("aiResult").innerHTML = `
             <div class="ai-analysis">
