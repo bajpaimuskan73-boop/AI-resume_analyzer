@@ -28,8 +28,6 @@ appId: "1:1058125482474:web:357016c5c532acd1ec8a93"
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-const app = initializeApp(firebaseConfig);
 window.signup = async () => {
 const email = document.getElementById("email").value;
 const password = document.getElementById("password").value;
